@@ -1,0 +1,12 @@
+Alpha 0.0.1: (Updated on Sep 25, 2025, by @QianJunfan (https://github.com/qianjunfan))
+      Update Log:
+                  This is kiloc's first update. Currently, it is only a small, not-very-robust prototype. 
+                  The code is messy, it doesn't support UTF-8, and it lacks color output. In short, it's very basic (but functional).
+                  However, it already includes a basic, relatively stable underlying rendering pipeline and the rudiments of a component system.
+
+      Next Update: (Implementation Order)
+                  Refactor all code, improve all function documentation and standards, and add support for UTF-8 and more colors.
+                  Add built-in focus control functionality (mouse and keyboard).
+                  Add built-in event system (such as clicking, scrolling, selection, etc.).
+                  Add layer functionality.
+                  After the features and architecture are stable, work will begin on writing usage documentation and optimizing performance.
