@@ -32,6 +32,12 @@
 #define BOTTOM_RIGHT_CORNER  "\xE2\x94\x98"
 #define HORIZONTAL_LINE      "\xE2\x94\x80"
 #define VERTICAL_LINE        "\xE2\x94\x82"
+
+
+#define T_RIGHT_JOINT        "\xE2\x94\xA4" // ┣
+#define T_LEFT_JOINT         "\xE2\x94\x9C" // ┠
+#define TOP_TITLE_LEFT       "\xE2\x95\x82" // ┏
+#define TOP_TITLE_RIGHT      "\xE2\x95\x8A" // ┓
 /** @} */
 
 
@@ -41,7 +47,8 @@
 enum cmp_type {
         root,
         container,
-        text   
+        text,
+        box
 };
 
 /**
@@ -52,6 +59,7 @@ struct container {
 
         struct kiloc_cmp *base;
 };
+
 
 /**
  * @brief Runtime data structure for a text element component.
@@ -64,6 +72,13 @@ struct text {
         struct kiloc_cmp *base;      
 };
 
+struct box {
+        uint16_t x, y, w, h;
+        char *title;
+        uint64_t border_style;
+
+        struct kiloc_cmp *base;
+};
 
 /**
  * @brief The generic base structure for all components in the TUI tree.

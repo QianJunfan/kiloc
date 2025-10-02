@@ -244,11 +244,13 @@ void kiloc_putstr(uint16_t x, uint16_t y, const char *content, uint64_t style)
 /* Static component helpers */
 static struct container *_kiloc_cmp_container_init(struct kiloc_cmp *c);
 static struct text *_kiloc_cmp_text_init(struct kiloc_cmp *c);
+static struct box *_kiloc_cmp_box_init(struct kiloc_cmp *c);
 static void _kiloc_cmp_add_child(struct kiloc_cmp *p, struct kiloc_cmp *c);
 static void _kiloc_cmp_render(struct kiloc_cmp *c);
 static void _kiloc_cmp_root_render(struct kiloc_cmp *c);
 static void _kiloc_cmp_container_render(struct kiloc_cmp *c);
 static void _kiloc_cmp_text_render(struct kiloc_cmp* c);
+static void _kiloc_cmp_box_render(struct kiloc_cmp *c);
 
 /**
  * @brief Allocates and links the component-specific struct container.
@@ -276,6 +278,20 @@ static struct text *_kiloc_cmp_text_init(struct kiloc_cmp *c)
 
         s->base = c;
         return s;       
+}
+
+/**
+ * @brief Allocates and links the component-specific struct box.
+ * @param c The generic component base.
+ * @return The allocated struct box pointer.
+ */
+static struct box *_kiloc_cmp_box_init(struct kiloc_cmp *c)
+{
+        c->self = (struct box *)malloc(sizeof(struct box));
+        struct box *s = c->self;
+
+        s->base = c;
+        return s;
 }
 
 /**
@@ -309,6 +325,9 @@ static void _kiloc_cmp_render(struct kiloc_cmp *c)
                         break;
                 case text:
                         _kiloc_cmp_text_render(c);
+                        break;
+                case box:
+                        _kiloc_cmp_box_render(c);
                         break;
         }
 }
@@ -345,6 +364,79 @@ static void _kiloc_cmp_container_render(struct kiloc_cmp *c)
         }
 }
 
+/**
+ * @brief Calculates the absolute position of a box and draws its border and title.
+ * @param c The box component.
+ */
+static void _kiloc_cmp_box_render(struct kiloc_cmp *c)
+{
+	struct box *s = (struct box *)c->self;
+	uint16_t pid = c->pid;
+
+
+	if (pid > 0) {
+		c->abs_x = k->cids[pid]->abs_x + s->x;
+		c->abs_y = k->cids[pid]->abs_y + s->y;
+	} else {
+		c->abs_x = s->x;
+		c->abs_y = s->y;
+	}
+
+	uint16_t ax = c->abs_x;
+	uint16_t ay = c->abs_y;
+	uint16_t ex = ax + s->w - 1;
+	uint16_t ey = ay + s->h - 1;
+	uint64_t style = s->border_style;
+        const char *h_line = HORIZONTAL_LINE;
+        const char *v_line = VERTICAL_LINE;
+
+
+	// Check boundary conditions
+	if (ex >= k->max_w || ey >= k->max_h) return;
+
+	kiloc_putchr(ax, ay, TOP_LEFT_CORNER, style);     // Top-Left
+	kiloc_putchr(ex, ay, TOP_RIGHT_CORNER, style);    // Top-Right
+	kiloc_putchr(ax, ey, BOTTOM_LEFT_CORNER, style);  // Bottom-Left
+	kiloc_putchr(ex, ey, BOTTOM_RIGHT_CORNER, style); // Bottom-Right
+
+	for (uint16_t y = ay + 1; y < ey; ++y) {
+		kiloc_putchr(ax, y, v_line, style); // Left Vertical
+		kiloc_putchr(ex, y, v_line, style); // Right Vertical
+	}
+
+	for (uint16_t x = ax + 1; x < ex; ++x) {
+		kiloc_putchr(x, ay, h_line, style); // Top Horizontal
+		kiloc_putchr(x, ey, h_line, style); // Bottom Horizontal
+	}
+
+	if (s->title && *s->title != '\0') {
+		uint16_t title_len = 0;
+                const char *title_ptr = s->title;
+        while (*title_ptr != '\0') {
+                int len = _kiloc_get_utf8_len(title_ptr);
+                if (len == 0) break;
+                title_len += _kiloc_get_char_width(title_ptr, len);
+                title_ptr += len;
+        }
+
+		uint16_t start_x = ax + 2;
+		uint16_t content_end_x = start_x + title_len;
+
+		if (content_end_x < ex - 1) {
+			// Write the title over the top line
+			kiloc_putchr(start_x - 1, ay, " ", style); // Space before title
+			kiloc_putstr(start_x, ay, s->title, style); // The title content
+			kiloc_putchr(content_end_x, ay, " ", style); // Space after title
+
+			// Redraw the joint piece after the title
+			kiloc_putchr(content_end_x + 1, ay, HORIZONTAL_LINE, style);
+		}
+	}
+    
+    for (uint16_t i = 0; i < c->child_count; ++i) {
+        _kiloc_cmp_render(c->children[i]);
+    }
+}
 
 /**
  * @brief Calculates the absolute position of a text component and outputs the string.
@@ -458,6 +550,8 @@ void *kiloc_addcmp (struct kiloc_cmp *c)
                         return _kiloc_cmp_container_init(c);
                 case text:
                         return _kiloc_cmp_text_init(c);
+                case box:
+                        return _kiloc_cmp_box_init(c);
         }
 
         return NULL;
@@ -536,3 +630,5 @@ void kiloc_render(void)
         // Flush output
         fflush(stdout);
 }
+
+
